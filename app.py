@@ -372,7 +372,7 @@ def submit_form():
         return jsonify(message=str(e)), 500
 
 
-@app.route('/create_users_from_form', methods=['POST'])
+@app.route('/create_users_from_form', methods=['GET'])
 def create_users_from_form():
     forms = Form.query.all()
 
@@ -419,6 +419,7 @@ def create_users_from_form():
 
         # Add the new user to the database
         db.session.add(new_user)
+        db.session.commit()
 
         try:
             # Initialize the Referral table for the new user
@@ -427,14 +428,11 @@ def create_users_from_form():
             db.session.add(referral_data)
             db.session.commit()
 
-        except IntegrityError:
-            # Handle IntegrityError (e.g., if user_id already exists in Referral table)
+        except IntegrityError as e:
             db.session.rollback()
+            print(f"IntegrityError: {e}")
             print(
                 f"Referral data already exists for user with email '{form.email}'. Skipping.")
-
-    # Commit changes after processing all forms
-    db.session.commit()
 
     return jsonify({"message": "Users created successfully"}), 201
 
