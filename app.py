@@ -66,7 +66,9 @@ def add_cors_headers(response):
         'https://enetworks-update.vercel.app',
         'https://jobs-admin.vercel.app',
         'http://enetworksoffice.com.ng/',
-        'https://enetworksoffice.com.ng/'
+        'https://enetworksoffice.com.ng/',
+        'http://www.enetworksoffice.com.ng/',
+        'https://www.enetworksoffice.com.ng/'
     ]
 
     origin = request.headers.get('Origin')
