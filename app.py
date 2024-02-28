@@ -519,12 +519,19 @@ def create_users_batch():
             password = "0000-0000"
             hashed_password = bcrypt_sha256.hash(password)
 
+            # Create a new user
             new_user = User(email=email, password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
 
+            # Create a referral for the new user
+            referral_data = Referral(
+                user_id=new_user.id, daily_target=0, weekly_target=0, monthly_target=0)
+            db.session.add(referral_data)
+            db.session.commit()
+
             created_users.append(
-                {"email": email, "message": "User created successfully."})
+                {"email": email, "message": "User and referral created successfully."})
 
         return jsonify({"created_users": created_users}), 201
 

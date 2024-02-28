@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 from flask_sqlalchemy import SQLAlchemy
 
@@ -99,18 +99,19 @@ class ReferralSettings(db.Model):
 class User(db.Model):
     id = db.Column(db.String(36), primary_key=True,
                    default=lambda: str(uuid.uuid4()), unique=True)
-    staff_id = db.Column(db.String(50), nullable=False, unique=True)
-    full_name = db.Column(db.String(50), nullable=False, unique=True)
+    staff_id = db.Column(db.String(50), nullable=True, unique=True)
+    full_name = db.Column(db.String(50), nullable=True, unique=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password = db.Column(db.String(255), nullable=False, default="0000-0000")
-    phone_number = db.Column(db.String(20), index=True, unique=True)
-    bvn = db.Column(db.String(20), index=True, unique=True)
-    nin = db.Column(db.String(20), index=True, unique=True)
-    agent_email = db.Column(db.String(100), index=True)
-    agent_card_no = db.Column(db.String(100), index=True)
-    address = db.Column(db.String(255), index=True)
+    phone_number = db.Column(db.String(20), index=True,
+                             unique=True, nullable=True)
+    bvn = db.Column(db.String(20), index=True, unique=True, nullable=True)
+    nin = db.Column(db.String(20), index=True, unique=True, nullable=True)
+    agent_email = db.Column(db.String(100), index=True, nullable=True)
+    agent_card_no = db.Column(db.String(100), index=True, nullable=True)
+    address = db.Column(db.String(255), index=True, nullable=True)
     gender = db.Column(db.String(255), index=True, nullable=True)
-    date_of_birth = db.Column(db.DateTime)
+    date_of_birth = db.Column(db.DateTime, nullable=True)
     guarantor_name = db.Column(db.String(255), index=True, nullable=True)
     guarantor_phone_number = db.Column(
         db.String(255), index=True, nullable=True)
@@ -120,14 +121,15 @@ class User(db.Model):
     guarantor_passport = db.Column(db.TEXT, index=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     modified_at = db.Column(db.DateTime, default=datetime.utcnow)
-    profile_image = db.Column(db.TEXT, default=None, index=True)
+    profile_image = db.Column(db.TEXT, default=None, index=True, nullable=True)
     is_email_verified = db.Column(db.Boolean, default=False, index=True)
+    filled_form = db.Column(db.Boolean, default=False, index=True)
     referrals_made = db.relationship(
         'SuccessfulReferral', backref='referrer', lazy='dynamic')
     referral_settings = db.relationship(
         'ReferralSettings', backref='user', uselist=False)
     office_status = db.Column(
-        db.Boolean, default=False, index=True)  # Added missing column
+        db.Boolean, default=False, index=True, nullable=True)
     referral = db.relationship('Referral', backref='user', uselist=False)
 
     def to_dict(self):
@@ -157,6 +159,10 @@ class User(db.Model):
             "referral": self.referral.to_dict() if self.referral else None,
             "successful_referrals": [referral.to_dict() for referral in self.referrals_made]
         }
+
+    def get_referral_settings(user_id):
+        settings = ReferralSettings.query.filter_by(user_id=user_id).first()
+        return settings.to_dict() if settings else None
 
 
 class StaffSalary(db.Model):
@@ -248,6 +254,52 @@ class SuccessfulReferral(db.Model):
             "timestamp": str(self.timestamp),
             "referral_id": self.referral_id,
         }
+
+    def get_successful_referrals(user_id, limit=10):
+        # Get the successful referrals made by a user
+        referrals = SuccessfulReferral.query.filter_by(
+            referrer_id=user_id).limit(limit).all()
+        return [referral.to_dict() for referral in referrals]
+
+    @staticmethod
+    def get_weekly_work_done(user_id):
+        # Get the list of work done for the current week
+        current_date = datetime.utcnow()
+        start_of_week = current_date - timedelta(days=current_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
+        # Query for successful referrals within the current week
+        weekly_referrals = SuccessfulReferral.query.filter(
+            SuccessfulReferral.referrer_id == user_id,
+            SuccessfulReferral.timestamp >= start_of_week,
+            SuccessfulReferral.timestamp <= end_of_week
+        ).all()
+
+        return [referral.to_dict() for referral in weekly_referrals]
+
+    @staticmethod
+    def get_monthly_work_done(user_id):
+        # Get the list of work done for the current month
+        current_date = datetime.utcnow()
+        start_of_month = current_date.replace(day=1)
+        end_of_month = (start_of_month + timedelta(days=32)
+                        ).replace(day=1) - timedelta(days=1)
+
+        # Query for successful referrals within the current month
+        monthly_referrals = SuccessfulReferral.query.filter(
+            SuccessfulReferral.referrer_id == user_id,
+            SuccessfulReferral.timestamp >= start_of_month,
+            SuccessfulReferral.timestamp <= end_of_month
+        ).all()
+
+        return [referral.to_dict() for referral in monthly_referrals]
+
+    @staticmethod
+    def get_total_referrals_count(user_id):
+        # Get the total number of referrals for the user
+        total_referrals = SuccessfulReferral.query.filter_by(
+            referrer_id=user_id).count()
+        return total_referrals
 
 
 class Referral(db.Model):
