@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import uuid
 from flask_sqlalchemy import SQLAlchemy
 
@@ -263,36 +263,34 @@ class SuccessfulReferral(db.Model):
 
     @staticmethod
     def get_weekly_work_done(user_id):
-        # Get the list of work done for the current week
-        current_date = datetime.utcnow()
-        start_of_week = current_date - timedelta(days=current_date.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
+        # Calculate the start and end dates for the current week
+        start_date = datetime.utcnow().date() - timedelta(days=datetime.utcnow().weekday())
+        end_date = start_date + timedelta(days=6)
 
-        # Query for successful referrals within the current week
-        weekly_referrals = SuccessfulReferral.query.filter(
+        # Query successful referrals within the current week
+        weekly_work_done = SuccessfulReferral.query.filter(
             SuccessfulReferral.referrer_id == user_id,
-            SuccessfulReferral.timestamp >= start_of_week,
-            SuccessfulReferral.timestamp <= end_of_week
+            SuccessfulReferral.timestamp >= start_date,
+            SuccessfulReferral.timestamp <= end_date
         ).all()
 
-        return [referral.to_dict() for referral in weekly_referrals]
+        return [referral.to_dict() for referral in weekly_work_done]
 
     @staticmethod
     def get_monthly_work_done(user_id):
-        # Get the list of work done for the current month
-        current_date = datetime.utcnow()
-        start_of_month = current_date.replace(day=1)
-        end_of_month = (start_of_month + timedelta(days=32)
-                        ).replace(day=1) - timedelta(days=1)
+        # Calculate the start and end dates for the current month
+        today = datetime.utcnow().date()
+        start_date = date(today.year, today.month, 1)
+        end_date = date(today.year, today.month + 1, 1) - timedelta(days=1)
 
-        # Query for successful referrals within the current month
-        monthly_referrals = SuccessfulReferral.query.filter(
+        # Query successful referrals within the current month
+        monthly_work_done = SuccessfulReferral.query.filter(
             SuccessfulReferral.referrer_id == user_id,
-            SuccessfulReferral.timestamp >= start_of_month,
-            SuccessfulReferral.timestamp <= end_of_month
+            SuccessfulReferral.timestamp >= start_date,
+            SuccessfulReferral.timestamp <= end_date
         ).all()
 
-        return [referral.to_dict() for referral in monthly_referrals]
+        return [referral.to_dict() for referral in monthly_work_done]
 
     @staticmethod
     def get_total_referrals_count(user_id):

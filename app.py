@@ -639,13 +639,11 @@ def get_weekly_work_done_route():
         current_user_id = get_jwt_identity()
 
         # Get weekly work done for the user
-        weekly_work_done = SuccessfulReferral.get_weekly_work_done(
-            current_user_id)
+        weekly_work_done = SuccessfulReferral.get_weekly_work_done(current_user_id)
         return jsonify({"weekly_work_done": weekly_work_done})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/monthly_work_done', methods=['GET'])
 @jwt_required()
@@ -655,13 +653,11 @@ def get_monthly_work_done_route():
         current_user_id = get_jwt_identity()
 
         # Get monthly work done for the user
-        monthly_work_done = SuccessfulReferral.get_monthly_work_done(
-            current_user_id)
+        monthly_work_done = SuccessfulReferral.get_monthly_work_done(current_user_id)
         return jsonify({"monthly_work_done": monthly_work_done})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/total_referrals_count', methods=['GET'])
 @jwt_required()
